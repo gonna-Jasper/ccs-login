@@ -9,11 +9,10 @@
   <!--
     共用 Google 登入接收頁 v4（放在 GitHub Pages）
     [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
-    [修正25] 整頁跳轉：驗證完成後可返回系統網址(?ln=登入請求)
-    [修正27] 登入改在新分頁進行：驗證完成後不自動跳回 script.google.com(手機多帳號會失敗)，
-             改為關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
+    [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
+             (不自動跳回 script.google.com，避免手機多帳號失敗)
+    v4.1：新增系統「storelog 門市工作日誌」
 
-    流程：系統頁 → Google 登入 → 本頁(?code&state) → 背景 POST 給系統 doPost 驗證 → 自動返回系統
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
   <style>
@@ -46,18 +45,20 @@
   <script>
     /* =====================================================================
      * ★ 系統白名單：系統代碼 → { name: 顯示名稱, url: Apps Script 網址(一般格式，結尾 /exec) }
-     *   系統代碼需與各系統設定相同(跨部門溝通系統：Code.gs 的 CFG.OAUTH_SYSTEM_ID；
-     *   GoogleLogin 模組：GL_CFG.SYSTEM_ID)
+     *   系統代碼需與各系統設定相同(跨部門溝通系統：CFG.OAUTH_SYSTEM_ID；GoogleLogin 模組：GL_CFG.SYSTEM_ID)
      * ===================================================================== */
     const SYSTEMS = {
       ccs: {
         name: '跨部門溝通系統',
         url: 'https://script.google.com/macros/s/AKfycbz9Kw7Zd29-WIC2-9a-ZLxyxInOz1ZhGg2603DKkOtpOa84S88UBAwSbV31Y7pD5TjX4g/exec'
+      },
+      storelog: {
+        name: '門市工作日誌',
+        url: 'https://script.google.com/macros/s/AKfycbwY4ojAFmhscnIbbBvjMojcHTEZ2IyM7tIjfM3tKT7yf-gB77eFmeCOtGJLuRQN9zyS/exec' // ★ 請改成門市工作日誌的 /exec 網址
       }
-      // , 新系統代碼: { name: '新系統名稱', url: 'https://script.google.com/macros/s/部署ID/exec' }
     };
     const DEFAULT_SYSTEM = 'ccs'; // 舊格式 state(沒有系統代碼)時使用
-    const CLOSE_DELAY_MS = 800; // 顯示結果後嘗試自動關閉本分頁的延遲
+    const CLOSE_DELAY_MS = 800;
 
     const $ = id => document.getElementById(id);
 
@@ -79,7 +80,7 @@
       return { id: id, name: sys.name || id, url: sys.url, nonce: /^[a-f0-9]{64}$/.test(nonce) ? nonce : '' };
     }
 
-    /** [修正27] 完成後：嘗試關閉本分頁；無法關閉時提示切回原本的系統分頁 */
+    /** 完成後：嘗試關閉本分頁；無法關閉時提示切回原本的系統分頁 */
     function finish(target, ok) {
       const back = target.url + (target.nonce ? '?ln=' + target.nonce : '');
       $('btnBack').href = back;
@@ -99,7 +100,6 @@
       const code = q.get('code') || h.get('code') || '';
       const state = q.get('state') || h.get('state') || '';
       const error = q.get('error') || h.get('error') || '';
-      // 立即清除網址上的授權碼，避免被重新整理或分享
       try { history.replaceState(null, '', location.pathname); } catch (e) {}
 
       if (!state || (!code && !error)) {
@@ -118,7 +118,6 @@
 
       const body = JSON.stringify({ code: code, state: state, error: error });
       try {
-        // 不帶 Cookie 的背景請求，不會觸發 Google 多帳號切換頁
         const res = await fetch(target.url, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -129,9 +128,8 @@
         const data = await res.json();
         if (data && data.success) show(true, '登入成功', '正在返回系統...');
         else show(false, '登入未完成', ((data && data.message) || '登入失敗') + '\n請切換回原本的系統分頁查看說明。');
-        finish(target, !!(data && data.success)); // 成功或未授權都由原系統分頁顯示對應畫面
+        finish(target, !!(data && data.success));
       } catch (e) {
-        // 若瀏覽器無法讀取回應，改用不讀回應的方式送出，再返回系統取回結果
         try {
           await fetch(target.url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, credentials: 'omit' });
           show(true, '已送出驗證', '正在返回系統...');
