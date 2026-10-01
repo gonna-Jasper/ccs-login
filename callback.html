@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>跨部門溝通系統 - 登入中</title>
+  <!--
+    [修正23] Google 登入接收頁（放在 GitHub Pages）
+    流程：Google 登入完成 → 導回本頁(?code=...&state=...) → 本頁以背景 POST 交給 Apps Script(doPost) 驗證
+          → 原本的系統頁面自動偵測登入結果並進入系統
+    本頁不含任何機密資料；只需修改下方 GAS_URL。
+  -->
+  <style>
+    body { margin: 0; font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif; background: #f4f6f8; color: #263238; }
+    .box { max-width: 420px; margin: 15vh auto 0; background: #fff; border: 1px solid #d0d7de; border-radius: 12px; padding: 28px 24px; text-align: center; }
+    .icon { font-size: 44px; line-height: 1.2; }
+    h2 { margin: 8px 0; font-size: 1.2rem; }
+    p { color: #455a64; line-height: 1.7; white-space: pre-line; }
+    .ok { color: #2e7d32; } .err { color: #c62828; }
+    .btns { margin-top: 14px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    button, a.btn { border: 0; background: #1976d2; color: #fff; border-radius: 8px; padding: 10px 20px; font-size: 15px; cursor: pointer; text-decoration: none; display: inline-block; }
+    .gray { background: #607d8b !important; }
+    .spin { display: inline-block; width: 28px; height: 28px; border: 3px solid #90caf9; border-top-color: #1565c0; border-radius: 50%; animation: s .8s linear infinite; }
+    @keyframes s { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="icon" id="icon"><span class="spin"></span></div>
+    <h2 id="title">登入驗證中...</h2>
+    <p id="msg">請稍候，正在確認您的 Google 帳號。</p>
+    <div class="btns" id="btns" style="display:none;">
+      <button id="btnClose">關閉此視窗</button>
+      <a class="btn gray" id="btnBack" href="#">回到系統</a>
+    </div>
+  </div>
+
+  <script>
+    /* ===== ★ 請改成您的 Apps Script 網頁應用程式網址（一般格式，結尾 /exec） ===== */
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbz9Kw7Zd29-WIC2-9a-ZLxyxInOz1ZhGg2603DKkOtpOa84S88UBAwSbV31Y7pD5TjX4g/exec';
+
+    const $ = id => document.getElementById(id);
+    $('btnBack').href = GAS_URL;
+    $('btnClose').onclick = () => { try { window.close(); } catch (e) {} setTimeout(() => { location.href = GAS_URL; }, 300); };
+
+    function show(ok, title, msg, autoClose) {
+      $('icon').textContent = ok ? '✅' : '⚠️';
+      $('title').textContent = title;
+      $('title').className = ok ? 'ok' : 'err';
+      $('msg').textContent = msg;
+      $('btns').style.display = 'flex';
+      if (autoClose) setTimeout(() => { try { window.close(); } catch (e) {} }, 1500);
+    }
+
+    async function main() {
+      const q = new URLSearchParams(location.search);
+      const h = new URLSearchParams(location.hash.replace(/^#/, ''));
+      const code = q.get('code') || h.get('code') || '';
+      const state = q.get('state') || h.get('state') || '';
+      const error = q.get('error') || h.get('error') || '';
+      // 立即清除網址上的授權碼，避免被重新整理或分享
+      try { history.replaceState(null, '', location.pathname); } catch (e) {}
+
+      if (!state || (!code && !error)) {
+        show(false, '無效的登入請求', '請回到系統頁面重新按「使用 Google 帳號登入」。');
+        return;
+      }
+      const body = JSON.stringify({ code, state, error });
+      try {
+        // 不帶 Cookie 的背景請求，不會觸發 Google 多帳號切換頁
+        const res = await fetch(GAS_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: body,
+          credentials: 'omit',
+          redirect: 'follow'
+        });
+        const data = await res.json();
+        if (data && data.success) show(true, '登入成功', '請回到原本的系統頁面，系統會自動進入。\n（此視窗可關閉）', true);
+        else show(false, '登入未完成', (data && data.message) || '登入失敗，請回到系統重新登入。');
+      } catch (e) {
+        // 若瀏覽器無法讀取回應，改用不讀回應的方式送出，結果由原系統頁面顯示
+        try {
+          await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, credentials: 'omit' });
+          show(true, '已送出驗證', '請回到原本的系統頁面查看登入結果。\n（此視窗可關閉）');
+        } catch (e2) {
+          show(false, '連線失敗', '無法連線到系統，請檢查網路後回到系統重新登入。');
+        }
+      }
+    }
+    main();
+  </script>
+</body>
+</html>
