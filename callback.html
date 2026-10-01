@@ -12,6 +12,7 @@
     [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
              (不自動跳回 script.google.com，避免手機多帳號失敗)
     v4.1：新增系統「storelog 門市工作日誌」
+    v4.2：系統沒有回傳 JSON 時明確顯示原因(多為部署存取權不是「任何人」)，不再誤報「已送出驗證」
 
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
@@ -125,7 +126,14 @@
           credentials: 'omit',
           redirect: 'follow'
         });
-        const data = await res.json();
+        const txt = await res.text();
+        let data = null;
+        try { data = JSON.parse(txt); } catch (x) { data = null; }
+        if (!data) {
+          show(false, '系統沒有正確回應', '「' + target.name + '」未回傳登入結果（HTTP ' + res.status + '）。\n請管理者確認部署的「誰可以存取」為「任何人」並已部署新版本；\n可在 Apps Script 編輯器執行 glSelfTest() 檢查。');
+          $('note').style.display = 'block';
+          return;
+        }
         if (data && data.success) show(true, '登入成功', '正在返回系統...');
         else show(false, '登入未完成', ((data && data.message) || '登入失敗') + '\n請切換回原本的系統分頁查看說明。');
         finish(target, !!(data && data.success));
