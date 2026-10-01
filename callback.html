@@ -7,16 +7,12 @@
   <meta name="referrer" content="no-referrer">
   <title>Google 登入中</title>
   <!--
-    共用 Google 登入接收頁 v2（[修正24] 多系統共用版，放在 GitHub Pages）
+    共用 Google 登入接收頁 v3（放在 GitHub Pages）
+    [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
+    [修正25] 整頁跳轉：驗證完成後自動返回系統網址(?ln=登入請求)，由系統取回登入結果並開啟原本的案件
 
-    運作方式：
-      1. 各系統送出 Google 登入時，state 格式為「系統代碼.隨機碼」，redirect_uri 指向本頁
-      2. Google 登入完成後導回本頁(?code=...&state=...)
-      3. 本頁依「系統代碼」在下方 SYSTEMS 白名單找到該系統網址，以背景 POST 把 code/state 交給該系統驗證
-      4. 原本的系統頁面自動偵測登入結果並進入系統
-
-    ★ 新增系統時，只要在 SYSTEMS 加一行即可(只會送往白名單內的網址，不接受外部指定)。
-    本頁不含任何密碼或金鑰。
+    流程：系統頁 → Google 登入 → 本頁(?code&state) → 背景 POST 給系統 doPost 驗證 → 自動返回系統
+    ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
   <style>
     body { margin: 0; font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif; background: #f4f6f8; color: #263238; }
@@ -27,8 +23,7 @@
     p { color: #455a64; line-height: 1.7; white-space: pre-line; }
     .ok { color: #2e7d32; } .err { color: #c62828; }
     .btns { margin-top: 14px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-    button, a.btn { border: 0; background: #1976d2; color: #fff; border-radius: 8px; padding: 10px 20px; font-size: 15px; cursor: pointer; text-decoration: none; display: inline-block; }
-    .gray { background: #607d8b !important; }
+    a.btn { border: 0; background: #1976d2; color: #fff; border-radius: 8px; padding: 10px 20px; font-size: 15px; text-decoration: none; display: inline-block; }
     .spin { display: inline-block; width: 28px; height: 28px; border: 3px solid #90caf9; border-top-color: #1565c0; border-radius: 50%; animation: s .8s linear infinite; }
     @keyframes s { to { transform: rotate(360deg); } }
   </style>
@@ -40,15 +35,15 @@
     <h2 id="title">登入驗證中...</h2>
     <p id="msg">請稍候，正在確認您的 Google 帳號。</p>
     <div class="btns" id="btns" style="display:none;">
-      <button id="btnClose">關閉此視窗</button>
-      <a class="btn gray" id="btnBack" href="#" style="display:none;">回到系統</a>
+      <a class="btn" id="btnBack" href="#">回到系統</a>
     </div>
   </div>
 
   <script>
     /* =====================================================================
-     * ★ 系統白名單：系統代碼 → { name: 顯示名稱, url: Apps Script 網頁應用程式網址(一般格式，結尾 /exec) }
-     *   系統代碼需與各系統 Code.gs 的 CFG.OAUTH_SYSTEM_ID 相同(小寫英數與-，2~20字)
+     * ★ 系統白名單：系統代碼 → { name: 顯示名稱, url: Apps Script 網址(一般格式，結尾 /exec) }
+     *   系統代碼需與各系統設定相同(跨部門溝通系統：Code.gs 的 CFG.OAUTH_SYSTEM_ID；
+     *   GoogleLogin 模組：GL_CFG.SYSTEM_ID)
      * ===================================================================== */
     const SYSTEMS = {
       ccs: {
@@ -57,35 +52,35 @@
       }
       // , 新系統代碼: { name: '新系統名稱', url: 'https://script.google.com/macros/s/部署ID/exec' }
     };
-    /* 舊格式 state(沒有系統代碼)時使用的系統，相容 v7.7 以前已送出的登入請求 */
-    const DEFAULT_SYSTEM = 'ccs';
+    const DEFAULT_SYSTEM = 'ccs'; // 舊格式 state(沒有系統代碼)時使用
+    const RETURN_DELAY_MS = 600; // 顯示結果後自動返回系統的延遲
 
     const $ = id => document.getElementById(id);
-    let target = null;
 
-    function show(ok, title, msg, autoClose) {
+    function show(ok, title, msg) {
       $('icon').textContent = ok ? '✅' : '⚠️';
       $('title').textContent = title;
       $('title').className = ok ? 'ok' : 'err';
       $('msg').textContent = msg;
-      $('btns').style.display = 'flex';
-      if (autoClose) setTimeout(() => { try { window.close(); } catch (e) {} }, 1500);
     }
 
-    $('btnClose').onclick = () => {
-      try { window.close(); } catch (e) {}
-      if (target) setTimeout(() => { location.href = target.url; }, 300);
-    };
-
-    /** 解析 state：「系統代碼.隨機碼」→ 系統設定；找不到則回傳 null */
-    function resolveSystem(state) {
-      const i = state.indexOf('.');
-      const id = (i > 0 ? state.slice(0, i) : DEFAULT_SYSTEM).toLowerCase();
-      if (!/^[a-z0-9-]{2,20}$/.test(id)) return null;
-      if (!Object.prototype.hasOwnProperty.call(SYSTEMS, id)) return null;
+    /** 解析 state：「系統代碼.登入請求」 */
+    function parseState(state) {
+      const parts = String(state || '').split('.');
+      const id = (parts.length > 1 ? parts[0] : DEFAULT_SYSTEM).toLowerCase();
+      const nonce = parts[parts.length - 1];
+      if (!/^[a-z0-9-]{2,20}$/.test(id) || !Object.prototype.hasOwnProperty.call(SYSTEMS, id)) return null;
       const sys = SYSTEMS[id];
       if (!sys || !/^https:\/\/script\.google\.com\/(a\/macros\/[^/]+|macros)\/s\/[\w-]+\/exec$/.test(sys.url)) return null;
-      return { id: id, name: sys.name || id, url: sys.url };
+      return { id: id, name: sys.name || id, url: sys.url, nonce: /^[a-f0-9]{64}$/.test(nonce) ? nonce : '' };
+    }
+
+    /** 返回系統(帶 ln 讓系統取回登入結果) */
+    function goBack(target) {
+      const url = target.url + (target.nonce ? '?ln=' + target.nonce : '');
+      $('btnBack').href = url;
+      $('btns').style.display = 'flex';
+      setTimeout(() => { location.replace(url); }, RETURN_DELAY_MS);
     }
 
     async function main() {
@@ -101,16 +96,15 @@
         show(false, '無效的登入請求', '請回到系統頁面重新按「使用 Google 帳號登入」。');
         return;
       }
-      target = resolveSystem(state);
+      const target = parseState(state);
       if (!target) {
         show(false, '無法識別的系統', '此登入請求的系統代碼未登記，請聯絡系統管理者。');
         return;
       }
       $('sys').textContent = target.name;
       $('sys').style.display = 'inline-block';
-      $('btnBack').href = target.url;
-      $('btnBack').style.display = 'inline-block';
       document.title = target.name + ' - 登入中';
+      $('btnBack').href = target.url;
 
       const body = JSON.stringify({ code: code, state: state, error: error });
       try {
@@ -123,15 +117,18 @@
           redirect: 'follow'
         });
         const data = await res.json();
-        if (data && data.success) show(true, '登入成功', '請回到原本的系統頁面，系統會自動進入。\n（此視窗可關閉）', true);
-        else show(false, '登入未完成', (data && data.message) || '登入失敗，請回到系統重新登入。');
+        if (data && data.success) show(true, '登入成功', '正在返回系統...');
+        else show(false, '登入未完成', ((data && data.message) || '登入失敗') + '\n正在返回系統...');
+        goBack(target); // 成功或未授權都返回系統，由系統顯示對應畫面
       } catch (e) {
-        // 若瀏覽器無法讀取回應，改用不讀回應的方式送出，結果由原系統頁面顯示
+        // 若瀏覽器無法讀取回應，改用不讀回應的方式送出，再返回系統取回結果
         try {
           await fetch(target.url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, credentials: 'omit' });
-          show(true, '已送出驗證', '請回到原本的系統頁面查看登入結果。\n（此視窗可關閉）');
+          show(true, '已送出驗證', '正在返回系統...');
+          setTimeout(() => goBack(target), 1500);
         } catch (e2) {
           show(false, '連線失敗', '無法連線到系統，請檢查網路後回到系統重新登入。');
+          $('btns').style.display = 'flex';
         }
       }
     }
