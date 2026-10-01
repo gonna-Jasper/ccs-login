@@ -5,17 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
-  <title>跨部門溝通系統 - 登入中</title>
+  <title>Google 登入中</title>
   <!--
-    [修正23] Google 登入接收頁（放在 GitHub Pages）
-    流程：Google 登入完成 → 導回本頁(?code=...&state=...) → 本頁以背景 POST 交給 Apps Script(doPost) 驗證
-          → 原本的系統頁面自動偵測登入結果並進入系統
-    本頁不含任何機密資料；只需修改下方 GAS_URL。
+    共用 Google 登入接收頁 v2（[修正24] 多系統共用版，放在 GitHub Pages）
+
+    運作方式：
+      1. 各系統送出 Google 登入時，state 格式為「系統代碼.隨機碼」，redirect_uri 指向本頁
+      2. Google 登入完成後導回本頁(?code=...&state=...)
+      3. 本頁依「系統代碼」在下方 SYSTEMS 白名單找到該系統網址，以背景 POST 把 code/state 交給該系統驗證
+      4. 原本的系統頁面自動偵測登入結果並進入系統
+
+    ★ 新增系統時，只要在 SYSTEMS 加一行即可(只會送往白名單內的網址，不接受外部指定)。
+    本頁不含任何密碼或金鑰。
   -->
   <style>
     body { margin: 0; font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif; background: #f4f6f8; color: #263238; }
     .box { max-width: 420px; margin: 15vh auto 0; background: #fff; border: 1px solid #d0d7de; border-radius: 12px; padding: 28px 24px; text-align: center; }
     .icon { font-size: 44px; line-height: 1.2; }
+    .sys { display: inline-block; font-size: 0.8rem; color: #1565c0; background: #e3f2fd; border-radius: 999px; padding: 2px 10px; margin-bottom: 6px; }
     h2 { margin: 8px 0; font-size: 1.2rem; }
     p { color: #455a64; line-height: 1.7; white-space: pre-line; }
     .ok { color: #2e7d32; } .err { color: #c62828; }
@@ -28,22 +35,33 @@
 </head>
 <body>
   <div class="box">
+    <div class="sys" id="sys" style="display:none;"></div>
     <div class="icon" id="icon"><span class="spin"></span></div>
     <h2 id="title">登入驗證中...</h2>
     <p id="msg">請稍候，正在確認您的 Google 帳號。</p>
     <div class="btns" id="btns" style="display:none;">
       <button id="btnClose">關閉此視窗</button>
-      <a class="btn gray" id="btnBack" href="#">回到系統</a>
+      <a class="btn gray" id="btnBack" href="#" style="display:none;">回到系統</a>
     </div>
   </div>
 
   <script>
-    /* ===== ★ 請改成您的 Apps Script 網頁應用程式網址（一般格式，結尾 /exec） ===== */
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbz9Kw7Zd29-WIC2-9a-ZLxyxInOz1ZhGg2603DKkOtpOa84S88UBAwSbV31Y7pD5TjX4g/exec';
+    /* =====================================================================
+     * ★ 系統白名單：系統代碼 → { name: 顯示名稱, url: Apps Script 網頁應用程式網址(一般格式，結尾 /exec) }
+     *   系統代碼需與各系統 Code.gs 的 CFG.OAUTH_SYSTEM_ID 相同(小寫英數與-，2~20字)
+     * ===================================================================== */
+    const SYSTEMS = {
+      ccs: {
+        name: '跨部門溝通系統',
+        url: 'https://script.google.com/macros/s/AKfycbz9Kw7Zd29-WIC2-9a-ZLxyxInOz1ZhGg2603DKkOtpOa84S88UBAwSbV31Y7pD5TjX4g/exec'
+      }
+      // , 新系統代碼: { name: '新系統名稱', url: 'https://script.google.com/macros/s/部署ID/exec' }
+    };
+    /* 舊格式 state(沒有系統代碼)時使用的系統，相容 v7.7 以前已送出的登入請求 */
+    const DEFAULT_SYSTEM = 'ccs';
 
     const $ = id => document.getElementById(id);
-    $('btnBack').href = GAS_URL;
-    $('btnClose').onclick = () => { try { window.close(); } catch (e) {} setTimeout(() => { location.href = GAS_URL; }, 300); };
+    let target = null;
 
     function show(ok, title, msg, autoClose) {
       $('icon').textContent = ok ? '✅' : '⚠️';
@@ -52,6 +70,22 @@
       $('msg').textContent = msg;
       $('btns').style.display = 'flex';
       if (autoClose) setTimeout(() => { try { window.close(); } catch (e) {} }, 1500);
+    }
+
+    $('btnClose').onclick = () => {
+      try { window.close(); } catch (e) {}
+      if (target) setTimeout(() => { location.href = target.url; }, 300);
+    };
+
+    /** 解析 state：「系統代碼.隨機碼」→ 系統設定；找不到則回傳 null */
+    function resolveSystem(state) {
+      const i = state.indexOf('.');
+      const id = (i > 0 ? state.slice(0, i) : DEFAULT_SYSTEM).toLowerCase();
+      if (!/^[a-z0-9-]{2,20}$/.test(id)) return null;
+      if (!Object.prototype.hasOwnProperty.call(SYSTEMS, id)) return null;
+      const sys = SYSTEMS[id];
+      if (!sys || !/^https:\/\/script\.google\.com\/(a\/macros\/[^/]+|macros)\/s\/[\w-]+\/exec$/.test(sys.url)) return null;
+      return { id: id, name: sys.name || id, url: sys.url };
     }
 
     async function main() {
@@ -67,10 +101,21 @@
         show(false, '無效的登入請求', '請回到系統頁面重新按「使用 Google 帳號登入」。');
         return;
       }
-      const body = JSON.stringify({ code, state, error });
+      target = resolveSystem(state);
+      if (!target) {
+        show(false, '無法識別的系統', '此登入請求的系統代碼未登記，請聯絡系統管理者。');
+        return;
+      }
+      $('sys').textContent = target.name;
+      $('sys').style.display = 'inline-block';
+      $('btnBack').href = target.url;
+      $('btnBack').style.display = 'inline-block';
+      document.title = target.name + ' - 登入中';
+
+      const body = JSON.stringify({ code: code, state: state, error: error });
       try {
         // 不帶 Cookie 的背景請求，不會觸發 Google 多帳號切換頁
-        const res = await fetch(GAS_URL, {
+        const res = await fetch(target.url, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: body,
@@ -83,7 +128,7 @@
       } catch (e) {
         // 若瀏覽器無法讀取回應，改用不讀回應的方式送出，結果由原系統頁面顯示
         try {
-          await fetch(GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, credentials: 'omit' });
+          await fetch(target.url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, credentials: 'omit' });
           show(true, '已送出驗證', '請回到原本的系統頁面查看登入結果。\n（此視窗可關閉）');
         } catch (e2) {
           show(false, '連線失敗', '無法連線到系統，請檢查網路後回到系統重新登入。');
