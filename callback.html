@@ -13,6 +13,7 @@
              (不自動跳回 script.google.com，避免手機多帳號失敗)
     v4.1：新增系統「storelog 門市工作日誌」
     v4.2：系統沒有回傳 JSON 時明確顯示原因(多為部署存取權不是「任何人」)，不再誤報「已送出驗證」
+    v4.3：新增系統「contract 合約管理系統」(其餘系統設定不變)
 
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
@@ -56,6 +57,10 @@
       storelog: {
         name: '門市工作日誌',
         url: 'https://script.google.com/macros/s/AKfycbzKFXb8KojVJLoXp9xoigGbvI17GMoeYNK691587MMqGB239kWkMfOApiegs9eBo8x7/exec' // ★ 請改成門市工作日誌的 /exec 網址
+      },
+      contract: { // [v4.3]
+        name: '欣食旅 合約管理系統',
+        url: 'https://script.google.com/macros/s/AKfycbyCeWx_-GMMY2g_3xYzcfzVtl5e07AY_ok87oUmsPg3OxqVlTI1TuJ9Xzm0Ccq0GTdp/exec' // ★ 請改成合約管理系統的 /exec 網址
       }
     };
     const DEFAULT_SYSTEM = 'ccs'; // 舊格式 state(沒有系統代碼)時使用
