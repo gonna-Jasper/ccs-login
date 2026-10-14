@@ -15,6 +15,7 @@
     v4.2：系統沒有回傳 JSON 時明確顯示原因(多為部署存取權不是「任何人」)，不再誤報「已送出驗證」
     v4.3：新增系統「contract 合約管理系統」(其餘系統設定不變)
     v4.4：新增系統「project 專案追蹤管理系統」(其餘系統設定不變)
+    v4.5：新增系統「insure 門市加退保登記系統」(其餘系統設定不變)
 
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
@@ -66,6 +67,10 @@
       pms: { // [v4.4]
         name: '專案追蹤管理系統',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwxppkcQGfB2pgWyYHInmwed6mpY7wrNX1oo_R96CjLNCiT2Dx1TdB5uiZYJ54-b3jt/exec' // ★ 部署後改成本系統 /exec 網址
+      },
+      insure: { // [v4.5]
+        name: '門市加退保登記系統',
+        url: 'https://script.google.com/macros/s/AKfycbyZ_0xVdg54FQi3zMxNugyqq2g2imlU74j5yi5oi957pCTcCzy0C9e2I91VVhFml7GG/exec' // ★ 部署後改成本系統 /exec 網址
       }
     };
     const DEFAULT_SYSTEM = 'ccs'; // 舊格式 state(沒有系統代碼)時使用
