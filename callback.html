@@ -16,6 +16,7 @@
     v4.3：新增系統「contract 合約管理系統」(其餘系統設定不變)
     v4.4：新增系統「project 專案追蹤管理系統」(其餘系統設定不變)
     v4.5：新增系統「insure 門市加退保登記系統」(其餘系統設定不變)
+    v4.6：新增系統「incoming 公文來函紀錄系統」(其餘系統設定不變)
 
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
@@ -71,6 +72,10 @@
       insure: { // [v4.5]
         name: '門市加退保登記系統',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbyZ_0xVdg54FQi3zMxNugyqq2g2imlU74j5yi5oi957pCTcCzy0C9e2I91VVhFml7GG/exec' // ★ 部署後改成本系統 /exec 網址
+      },
+      incoming: { // [v4.6]
+        name: '公文來函紀錄系統',
+        url: 'https://script.google.com/macros/s/AKfycbwQwZ5F65dTK56APqMQSgfogGabf78yIfFbleavhujLeWrYmMhXaT8EiuFZcqvhfCSK/exec' // ★ 部署後改成收文系統 /exec 網址
       }
     };
     const DEFAULT_SYSTEM = 'ccs'; // 舊格式 state(沒有系統代碼)時使用
