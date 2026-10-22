@@ -1,63 +1,179 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex, nofollow">
-  <meta name="referrer" content="no-referrer">
-  <title>Google 登入中</title>
-  <!--
-    共用 Google 登入接收頁 v4.7（放在 GitHub Pages）
-    [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
-    [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
-             (不自動跳回 script.google.com，避免手機多帳號失敗)
-    v4.1：新增系統「storelog 門市工作日誌」
-    v4.2：系統沒有回傳 JSON 時明確顯示原因(多為部署存取權不是「任何人」)，不再誤報「已送出驗證」
-    v4.3：新增系統「contract 合約管理系統」
-    v4.4：新增系統「pms 專案追蹤管理系統」
-    v4.5：新增系統「insure 門市加退保登記系統」
-    v4.6：新增系統「incoming 公文來函紀錄系統」
-    v4.7：新增系統「drivegov Google Drive 權限治理中心」
-    ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
-  -->
-  <style>
-    body { margin: 0; font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif; background: #f4f6f8; color: #263238; }
-    .box { max-width: 420px; margin: 15vh auto 0; background: #fff; border: 1px solid #d0d7de; border-radius: 12px; padding: 28px 24px; text-align: center; }
-    .icon { font-size: 44px; line-height: 1.2; }
-    .sys { display: inline-block; font-size: 0.8rem; color: #1565c0; background: #e3f2fd; border-radius: 999px; padding: 2px 10px; margin-bottom: 6px; }
-    h2 { margin: 8px 0; font-size: 1.2rem; }
-    p { color: #455a64; line-height: 1.7; white-space: pre-line; }
-    .ok { color: #2e7d32; } .err { color: #c62828; }
-    .note { font-size: 0.78rem; color: #90a4ae; margin-top: 10px; }
-    .btns { margin-top: 14px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-    a.btn { border: 0; background: #1976d2; color: #fff; border-radius: 8px; padding: 10px 20px; font-size: 15px; text-decoration: none; display: inline-block; }
-    .spin { display: inline-block; width: 28px; height: 28px; border: 3px solid #90caf9; border-top-color: #1565c0; border-radius: 50%; animation: s .8s linear infinite; }
-    @keyframes s { to { transform: rotate(360deg); } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Google 登入中</title>
+<!--
+共用 Google 登入接收頁 v4.7（放在 GitHub Pages）
+[修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
+[修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
+(不自動跳回 script.google.com，避免手機多帳號失敗)
+v4.1：新增系統「storelog 門市工作日誌」
+v4.2：系統沒有回傳 JSON 時明確顯示原因(多為部署存取權不是「任何人」)，不再誤報「已送出驗證」
+v4.3：新增系統「contract 合約管理系統」(其餘系統設定不變)
+v4.4：新增系統「pms 專案追蹤管理系統」(其餘系統設定不變)
+v4.5：新增系統「insure 門市加退保登記系統」(其餘系統設定不變)
+v4.6：新增系統「incoming 公文來函紀錄系統」(其餘系統設定不變)
+v4.7：新增系統「drivegov Google Drive 權限治理中心」(其餘系統設定不變)
+
+★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
+-->
+<style>
+body { margin: 0; font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif; background: #f4f6f8; color: #263238; }
+.box { max-width: 420px; margin: 15vh auto 0; background: #fff; border: 1px solid #d0d7de; border-radius: 12px; padding: 28px 24px; text-align: center; }
+.icon { font-size: 44px; line-height: 1.2; }
+.sys { display: inline-block; font-size: 0.8rem; color: #1565c0; background: #e3f2fd; border-radius: 999px; padding: 2px 10px; margin-bottom: 6px; }
+h2 { margin: 8px 0; font-size: 1.2rem; }
+p { color: #455a64; line-height: 1.7; white-space: pre-line; }
+.ok { color: #2e7d32; } .err { color: #c62828; }
+.note { font-size: 0.78rem; color: #90a4ae; margin-top: 10px; }
+.btns { margin-top: 14px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+a.btn { border: 0; background: #1976d2; color: #fff; border-radius: 8px; padding: 10px 20px; font-size: 15px; text-decoration: none; display: inline-block; }
+.spin { display: inline-block; width: 28px; height: 28px; border: 3px solid #90caf9; border-top-color: #1565c0; border-radius: 50%; animation: s .8s linear infinite; }
+@keyframes s { to { transform: rotate(360deg); } }
+</style>
 </head>
 <body>
-  <div class="box">
-    <div class="sys" id="sys" style="display:none;"></div>
-    <div class="icon" id="icon"><span class="spin"></span></div>
-    <h2 id="title">登入驗證中...</h2>
-    <p id="msg">請稍候，正在確認您的 Google 帳號。</p>
-    <div class="btns" id="btns" style="display:none;"><a class="btn" id="btnClose" href="#">關閉此分頁</a></div>
-    <div class="note" id="note" style="display:none;">若原本的系統分頁已關閉，<a id="btnBack" href="#">點此重新開啟系統</a>。</div>
-  </div>
+<div class="box">
+<div class="sys" id="sys" style="display:none;"></div>
+<div class="icon" id="icon"><span class="spin"></span></div>
+<h2 id="title">登入驗證中...</h2>
+<p id="msg">請稍候，正在確認您的 Google 帳號。</p>
+<div class="btns" id="btns" style="display:none;">
+<a class="btn" id="btnClose" href="#">關閉此分頁</a>
+</div>
+<div class="note" id="note" style="display:none;">若原本的系統分頁已關閉，<a id="btnBack" href="#">點此重新開啟系統</a>。</div>
+</div>
+
 <script>
+/* =====================================================================
+* ★ 系統白名單：系統代碼 → { name: 顯示名稱, url: Apps Script 網址(一般格式，結尾 /exec) }
+*   系統代碼需與各系統設定相同(跨部門溝通系統：CFG.OAUTH_SYSTEM_ID；GoogleLogin 模組：GL_CFG.SYSTEM_ID)
+* ===================================================================== */
 const SYSTEMS = {
-  ccs:{name:'跨部門溝通系統',url:'https://script.google.com/macros/s/AKfycbz9Kw7Zd29-WIC2-9a-ZLxyxInOz1ZhGg2603DKkOtpOa84S88UBAwSbV31Y7pD5TjX4g/exec'},
-  storelog:{name:'門市工作日誌',url:'https://script.google.com/macros/s/AKfycbzKFXb8KojVJLoXp9xoigGbvI17GMoeYNK691587MMqGB239kWkMfOApiegs9eBo8x7/exec'},
-  contract:{name:'欣食旅 合約管理系統',url:'https://script.google.com/macros/s/AKfycbyCeWx_-GMMY2g_3xYzcfzVtl5e07AY_ok87oUmsPg3OxqVlTI1TuJ9Xzm0Ccq0GTdp/exec'},
-  pms:{name:'專案追蹤管理系統',url:'https://script.google.com/a/macros/gonna.online/s/AKfycbwxppkcQGfB2pgWyYHInmwed6mpY7wrNX1oo_R96CjLNCiT2Dx1TdB5uiZYJ54-b3jt/exec'},
-  insure:{name:'門市加退保登記系統',url:'https://script.google.com/a/macros/gonna.online/s/AKfycbyZ_0xVdg54FQi3zMxNugyqq2g2imlU74j5yi5oi957pCTcCzy0C9e2I91VVhFml7GG/exec'},
-  incoming:{name:'公文來函紀錄系統',url:'https://script.google.com/macros/s/AKfycbwQwZ5F65dTK56APqMQSgfogGabf78yIfFbleavhujLeWrYmMhXaT8EiuFZcqvhfCSK/exec'},
-  drivegov:{name:'Google Drive 權限治理中心',url:'https://script.google.com/macros/s/AKfycbwXvLEPbjyp54xJvKtWF_KItHO9qoOyhda2wfYvA7vIIr_B17uQIsplXMTVmXi9QZS9/exec'}
+ccs: {
+name: '跨部門溝通系統',
+url: 'https://script.google.com/macros/s/AKfycbz9Kw7Zd29-WIC2-9a-ZLxyxInOz1ZhGg2603DKkOtpOa84S88UBAwSbV31Y7pD5TjX4g/exec'
+},
+storelog: {
+name: '門市工作日誌',
+url: 'https://script.google.com/macros/s/AKfycbzKFXb8KojVJLoXp9xoigGbvI17GMoeYNK691587MMqGB239kWkMfOApiegs9eBo8x7/exec'
+},
+contract: { // [v4.3]
+name: '欣食旅 合約管理系統',
+url: 'https://script.google.com/macros/s/AKfycbyCeWx_-GMMY2g_3xYzcfzVtl5e07AY_ok87oUmsPg3OxqVlTI1TuJ9Xzm0Ccq0GTdp/exec'
+},
+pms: { // [v4.4]
+name: '專案追蹤管理系統',
+url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwxppkcQGfB2pgWyYHInmwed6mpY7wrNX1oo_R96CjLNCiT2Dx1TdB5uiZYJ54-b3jt/exec'
+},
+insure: { // [v4.5]
+name: '門市加退保登記系統',
+url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbyZ_0xVdg54FQi3zMxNugyqq2g2imlU74j5yi5oi957pCTcCzy0C9e2I91VVhFml7GG/exec'
+},
+incoming: { // [v4.6]
+name: '公文來函紀錄系統',
+url: 'https://script.google.com/macros/s/AKfycbwQwZ5F65dTK56APqMQSgfogGabf78yIfFbleavhujLeWrYmMhXaT8EiuFZcqvhfCSK/exec'
+},
+drivegov: { // [v4.7]
+name: 'Google Drive 權限治理中心',
+url: 'https://script.google.com/macros/s/AKfycbwXvLEPbjyp54xJvKtWF_KItHO9qoOyhda2wfYvA7vIIr_B17uQIsplXMTVmXi9QZS9/exec'
+}
 };
-const DEFAULT_SYSTEM='ccs'; const CLOSE_DELAY_MS=800; const $=id=>document.getElementById(id);
-function show(ok,title,msg){$('icon').textContent=ok?'✅':'⚠️';$('title').textContent=title;$('title').className=ok?'ok':'err';$('msg').textContent=msg;}
-function parseState(state){const parts=String(state||'').split('.');const id=(parts.length>1?parts[0]:DEFAULT_SYSTEM).toLowerCase();const nonce=parts[parts.length-1];if(!/^[a-z0-9-]{2,20}$/.test(id)||!Object.prototype.hasOwnProperty.call(SYSTEMS,id))return null;const sys=SYSTEMS[id];if(!sys||!/^https:\/\/script\.google\.com\/(a\/macros\/[^/]+|macros)\/s\/[\w-]+\/exec$/.test(sys.url))return null;return{id,name:sys.name||id,url:sys.url,nonce:/^[a-f0-9]{64}$/.test(nonce)?nonce:''};}
-function finish(target,ok){const back=target.url+(target.nonce?'?ln='+target.nonce:'');$('btnBack').href=back;$('btnClose').onclick=ev=>{ev.preventDefault();try{window.close();}catch(e){}setTimeout(hint,300)};function hint(){if(window.closed)return;$('msg').textContent=(ok?'登入完成！':'')+'請切換回原本的系統分頁，系統會自動處理。\n（手機可從分頁切換按鈕回到原分頁）';$('btns').style.display='flex';$('note').style.display='block';}setTimeout(()=>{try{window.close();}catch(e){}setTimeout(hint,400)},CLOSE_DELAY_MS);}
-async function main(){const q=new URLSearchParams(location.search),h=new URLSearchParams(location.hash.replace(/^#/,''));const code=q.get('code')||h.get('code')||'',state=q.get('state')||h.get('state')||'',error=q.get('error')||h.get('error')||'';try{history.replaceState(null,'',location.pathname)}catch(e){}if(!state||(!code&&!error)){show(false,'無效的登入請求','請回到系統頁面重新按「使用 Google 帳號登入」。');return;}const target=parseState(state);if(!target){show(false,'無法識別的系統','此登入請求的系統代碼未登記，或系統網址尚未設定，請聯絡系統管理者。');return;}$('sys').textContent=target.name;$('sys').style.display='inline-block';document.title=target.name+' - 登入中';$('btnBack').href=target.url;const body=JSON.stringify({code,state,error});try{const res=await fetch(target.url,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body,credentials:'omit',redirect:'follow'});const txt=await res.text();let data=null;try{data=JSON.parse(txt)}catch(x){}if(!data){show(false,'系統沒有正確回應','「'+target.name+'」未回傳登入結果（HTTP '+res.status+'）。\n請管理者確認部署的「誰可以存取」為「任何人」並已部署新版本；\n可在 Apps Script 編輯器執行 glSelfTest() 檢查。');$('note').style.display='block';return;}if(data.success)show(true,'登入成功','正在返回系統...');else show(false,'登入未完成',(data.message||'登入失敗')+'\n請切換回原本的系統分頁查看說明。');finish(target,!!data.success);}catch(e){try{await fetch(target.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body,credentials:'omit'});show(true,'已送出驗證','正在返回系統...');finish(target,true);}catch(e2){show(false,'連線失敗','無法連線到系統，請檢查網路後回到系統重新登入。');$('note').style.display='block';}}}
+const DEFAULT_SYSTEM = 'ccs'; // 舊格式 state(沒有系統代碼)時使用
+const CLOSE_DELAY_MS = 800;
+
+const $ = id => document.getElementById(id);
+
+function show(ok, title, msg) {
+$('icon').textContent = ok ? '✅' : '⚠️';
+$('title').textContent = title;
+$('title').className = ok ? 'ok' : 'err';
+$('msg').textContent = msg;
+}
+
+/** 解析 state：「系統代碼.登入請求」 */
+function parseState(state) {
+const parts = String(state || '').split('.');
+const id = (parts.length > 1 ? parts[0] : DEFAULT_SYSTEM).toLowerCase();
+const nonce = parts[parts.length - 1];
+if (!/^[a-z0-9-]{2,20}$/.test(id) || !Object.prototype.hasOwnProperty.call(SYSTEMS, id)) return null;
+const sys = SYSTEMS[id];
+if (!sys || !/^https:\/\/script\.google\.com\/(a\/macros\/[^/]+|macros)\/s\/[\w-]+\/exec$/.test(sys.url)) return null;
+return { id: id, name: sys.name || id, url: sys.url, nonce: /^[a-f0-9]{64}$/.test(nonce) ? nonce : '' };
+}
+
+/** 完成後：嘗試關閉本分頁；無法關閉時提示切回原本的系統分頁 */
+function finish(target, ok) {
+const back = target.url + (target.nonce ? '?ln=' + target.nonce : '');
+$('btnBack').href = back;
+$('btnClose').onclick = ev => { ev.preventDefault(); try { window.close(); } catch (e) {} setTimeout(hint, 300); };
+function hint() {
+if (window.closed) return;
+$('msg').textContent = (ok ? '登入完成！' : '') + '請切換回原本的系統分頁，系統會自動處理。\n（手機可從分頁切換按鈕回到原分頁）';
+$('btns').style.display = 'flex';
+$('note').style.display = 'block';
+}
+setTimeout(() => { try { window.close(); } catch (e) {} setTimeout(hint, 400); }, CLOSE_DELAY_MS);
+}
+
+async function main() {
+const q = new URLSearchParams(location.search);
+const h = new URLSearchParams(location.hash.replace(/^#/, ''));
+const code = q.get('code') || h.get('code') || '';
+const state = q.get('state') || h.get('state') || '';
+const error = q.get('error') || h.get('error') || '';
+try { history.replaceState(null, '', location.pathname); } catch (e) {}
+
+if (!state || (!code && !error)) {
+show(false, '無效的登入請求', '請回到系統頁面重新按「使用 Google 帳號登入」。');
+return;
+}
+const target = parseState(state);
+if (!target) {
+show(false, '無法識別的系統', '此登入請求的系統代碼未登記，請聯絡系統管理者。');
+return;
+}
+$('sys').textContent = target.name;
+$('sys').style.display = 'inline-block';
+document.title = target.name + ' - 登入中';
+$('btnBack').href = target.url;
+
+const body = JSON.stringify({ code: code, state: state, error: error });
+try {
+const res = await fetch(target.url, {
+method: 'POST',
+headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+body: body,
+credentials: 'omit',
+redirect: 'follow'
+});
+const txt = await res.text();
+let data = null;
+try { data = JSON.parse(txt); } catch (x) { data = null; }
+if (!data) {
+show(false, '系統沒有正確回應', '「' + target.name + '」未回傳登入結果（HTTP ' + res.status + '）。\n請管理者確認部署的「誰可以存取」為「任何人」並已部署新版本；\n可在 Apps Script 編輯器執行 glSelfTest() 檢查。');
+$('note').style.display = 'block';
+return;
+}
+if (data && data.success) show(true, '登入成功', '正在返回系統...');
+else show(false, '登入未完成', ((data && data.message) || '登入失敗') + '\n請切換回原本的系統分頁查看說明。');
+finish(target, !!(data && data.success));
+} catch (e) {
+try {
+await fetch(target.url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, credentials: 'omit' });
+show(true, '已送出驗證', '正在返回系統...');
+finish(target, true);
+} catch (e2) {
+show(false, '連線失敗', '無法連線到系統，請檢查網路後回到系統重新登入。');
+$('note').style.display = 'block';
+}
+}
+}
 main();
-</script></body></html>
+</script>
+</body>
+</html>
