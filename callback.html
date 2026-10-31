@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <title>Google 登入中</title>
   <!--
-    共用 Google 登入接收頁 v4.8（放在 GitHub Pages）
+    共用 Google 登入接收頁 v4.9（放在 GitHub Pages，上傳時檔名維持 callback.html）
     [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
     [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
              (不自動跳回 script.google.com，避免手機多帳號失敗)
@@ -19,6 +19,7 @@
     v4.6：新增系統「incoming 公文來函紀錄系統」(其餘系統設定不變)
     v4.7：新增系統「drivegov Google Drive 權限治理中心」(其餘系統設定不變)
     v4.8：新增系統「recruit 104 招募分析儀表板」(其餘系統設定不變)
+    v4.9：新增系統「workforce 全公司人力狀況儀表板」(其餘系統設定不變)
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
   <style>
@@ -83,7 +84,11 @@
       },
       recruit: { // [v4.8]
         name: '104 招募分析儀表板',
-        url: 'https://script.google.com/macros/s/AKfycby0dbG7xCgfAMrOPBKuq66-yc6nAXFakB-aGw1OSYn04EKwiJoLwlwcfoPywyQJ60Cc/exec' // ★ 部署後改成招募分析 /exec 網址（需與 GL_CFG.APP_URL 相同）
+        url: 'https://script.google.com/macros/s/AKfycby0dbG7xCgfAMrOPBKuq66-yc6nAXFakB-aGw1OSYn04EKwiJoLwlwcfoPywyQJ60Cc/exec'
+      },
+      workforce: { // [v4.9]
+        name: '全公司人力狀況儀表板',
+        url: 'https://script.google.com/macros/s/AKfycbxIAl1XtMF7eRWAdM-_907Y8UVUnHeRMx6eyGDaTU3UmgSXJ39BZF2deJ3JzRwdzs-Uqw/exec' // ★ 部署後改成人力儀表板 /exec 網址（需與 GL_CFG.APP_URL 相同）
       }
     };
     const DEFAULT_SYSTEM = 'ccs'; // 舊格式 state(沒有系統代碼)時使用
