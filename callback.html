@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <title>Google 登入中</title>
   <!--
-    共用 Google 登入接收頁 v4.11（放在 GitHub Pages，上傳時檔名維持 callback.html）
+    共用 Google 登入接收頁 v4.13（放在 GitHub Pages，上傳時檔名維持 callback.html）
     [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
     [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
              (不自動跳回 script.google.com，避免手機多帳號失敗)
@@ -23,6 +23,7 @@
     v4.10：workforce 顯示名稱改為「欣食旅 人力資源儀錶板」(網址與其餘系統不變)
     v4.11：新增系統「repair 資產修繕報修系統」與「repair-dev 資產修繕報修系統（預覽版）」(其餘系統設定不變)
     v4.12：新增系統「recruit-dev 104 招募分析儀表板（預覽版）」(其餘系統設定不變)
+    v4.13：新增系統「workforce-dev 欣食旅 人力資源儀錶板（預覽版）」(其餘系統設定不變)
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
   <style>
@@ -104,6 +105,10 @@
       'recruit-dev': { // [v4.12] 預覽版
         name: '104 招募分析儀表板（預覽版）',
         url: 'https://script.google.com/macros/s/AKfycbxY1I8Dx046hgqNfPwZ9VPKud8ldaj3Ea4pGxloAwAFkc6DbfgGd8wuOLnnXJ2AaGak/exec'
+      },
+      'workforce-dev': { // [v4.13] 預覽版
+        name: '欣食旅 人力資源儀錶板（預覽版）',
+        url: 'https://script.google.com/macros/s/AKfycbxSmXVMMZL620t3E0QDuBJHfHpDMk_KJ7IJBs5DDJzJW7x71DnqMgkWMirF3irOXjGF/exec'
       }
     };
     const DEFAULT_SYSTEM = 'ccs'; // 舊格式 state(沒有系統代碼)時使用
