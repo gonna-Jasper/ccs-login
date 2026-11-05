@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <title>Google 登入中</title>
   <!--
-    共用 Google 登入接收頁 v4.20（放在 GitHub Pages，上傳時檔名維持 callback.html）
+    共用 Google 登入接收頁 v4.21（放在 GitHub Pages，上傳時檔名維持 callback.html）
     [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
     [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
              (不自動跳回 script.google.com，避免手機多帳號失敗)
@@ -35,6 +35,7 @@
     v4.20：pos-analytics 支援「回到原視窗」：系統設定 origin(原視窗的 Apps Script 頁面來源)時，
            登入領取碼只用 postMessage 交給該來源的原視窗，原視窗完成登入並回覆後本分頁自動關閉；
            原視窗已關閉或瀏覽器切斷關聯時，維持 v4.14 行為(本分頁帶領取碼進入系統)。未設定 origin 的系統行為不變。
+    v4.21：新增系統「price-volume 價量差分析表」與「price-volume-dev 價量差分析表（預覽版）」(網域版網址；其餘系統設定不變)
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
   <style>
@@ -133,6 +134,14 @@
         origin: 'https://n-hlzb5pumcjtwzg2b4mhbzqt2qso4j65ficdy6ci-0lu-script.googleusercontent.com', // [v4.20] 原視窗的 Apps Script 頁面來源
         name: '欣食旅 POS營運資料分析',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxKTjJhk2-iDmRwjDXeBC_mhTPZJyGxGJU7uqqxRFkQ0c5MKnWpYDEMFJ9IthG_F5WJ/exec'
+      },
+      'price-volume': { // [v4.21]
+        name: '價量差分析表',
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwcdVqwmNxlATvKYFPIKL6WNk6hnYvs7caon4n1QqfADepmm7vjAibXLNswzFqjGXkGqA/exec'
+      },
+      'price-volume-dev': { // [v4.21] 預覽版
+        name: '價量差分析表（預覽版）',
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxkz4IDQ8nmYxvDcMAk73gsCn4Av70Ax7jKF-jMRWdB6Pdjx0ivQzmQps_kuJeAQdJY/exec'
       }
     };
     const DEFAULT_SYSTEM = 'ccs'; // 舊格式 state(沒有系統代碼)時使用
