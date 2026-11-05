@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <title>Google 登入中</title>
   <!--
-    共用 Google 登入接收頁 v4.19（放在 GitHub Pages，上傳時檔名維持 callback.html）
+    共用 Google 登入接收頁 v4.20（放在 GitHub Pages，上傳時檔名維持 callback.html）
     [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
     [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
              (不自動跳回 script.google.com，避免手機多帳號失敗)
@@ -32,6 +32,9 @@
     v4.18：expansion、expansion-dev 改用網域版網址(/a/macros/gonna.online/s/)：瀏覽器登入多個 Google 帳號時，一般網址會被導到 /macros/u/1/ 而無法開啟(其餘系統設定不變)
     v4.19：下列系統改用網域版網址(/a/macros/gonna.online/s/)，原因同 v4.18(部署 ID、顯示名稱與其餘邏輯不變)：
            ccs、storelog、contract、incoming、drivegov、recruit、workforce、repair、repair-dev、recruit-dev、workforce-dev
+    v4.20：pos-analytics 支援「回到原視窗」：系統設定 origin(原視窗的 Apps Script 頁面來源)時，
+           登入領取碼只用 postMessage 交給該來源的原視窗，原視窗完成登入並回覆後本分頁自動關閉；
+           原視窗已關閉或瀏覽器切斷關聯時，維持 v4.14 行為(本分頁帶領取碼進入系統)。未設定 origin 的系統行為不變。
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
   <style>
@@ -126,7 +129,8 @@
         name: '經營發展室 展店評估',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxaULyGdyTKHuHRIjrN2aoEid98U4dP6mfZqDleFKd65IojgzKHHNn1O5ugXF1Nh-HV/exec'
       },
-      'pos-analytics': { // [v4.17]
+      'pos-analytics': { // [v4.17][v4.20 回到原視窗]
+        origin: 'https://n-hlzb5pumcjtwzg2b4mhbzqt2qso4j65ficdy6ci-0lu-script.googleusercontent.com', // [v4.20] 原視窗的 Apps Script 頁面來源
         name: '欣食旅 POS營運資料分析',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxKTjJhk2-iDmRwjDXeBC_mhTPZJyGxGJU7uqqxRFkQ0c5MKnWpYDEMFJ9IthG_F5WJ/exec'
       }
@@ -150,7 +154,33 @@
       if (!/^[a-z0-9-]{2,20}$/.test(id) || !Object.prototype.hasOwnProperty.call(SYSTEMS, id)) return null;
       const sys = SYSTEMS[id];
       if (!sys || !/^https:\/\/script\.google\.com\/(a\/macros\/[^/]+|macros)\/s\/[\w-]+\/exec$/.test(sys.url)) return null;
-      return { id: id, name: sys.name || id, url: sys.url, nonce: /^[a-f0-9]{64}$/.test(nonce) ? nonce : '' };
+      // [v4.20] origin 只接受 Apps Script 頁面來源格式
+      const origin = /^https:\/\/n-[a-z0-9]+-0lu-script\.googleusercontent\.com$/.test(String(sys.origin || '')) ? sys.origin : '';
+      return { id: id, name: sys.name || id, url: sys.url, origin: origin, nonce: /^[a-f0-9]{64}$/.test(nonce) ? nonce : '' };
+    }
+
+    /**
+     * [v4.20] 把登入領取碼交給原視窗(只限 SYSTEMS 登記的來源)，等原視窗完成登入後回覆
+     * 回傳 true＝原視窗已完成登入；false＝沒有原視窗、來源不符或逾時(改走原本的導回流程)
+     */
+    function handToOpener(target, claim) {
+      return new Promise(resolve => {
+        let op = null;
+        try { op = window.opener; } catch (e) { op = null; }
+        if (!target.origin || !op) { resolve(false); return; }
+        let done = false;
+        let timer = null;
+        function onMsg(ev) {
+          if (ev.origin !== target.origin || ev.source !== op) return;
+          const d = ev.data || {};
+          if (d.type !== 'gl-claim-ack' || d.nonce !== target.nonce) return;
+          end(d.ok === true);
+        }
+        function end(v) { if (done) return; done = true; clearTimeout(timer); window.removeEventListener('message', onMsg); resolve(v); }
+        timer = setTimeout(() => end(false), 10000);
+        window.addEventListener('message', onMsg);
+        try { op.postMessage({ type: 'gl-claim', sys: target.id, nonce: target.nonce, claim: claim }, target.origin); } catch (e) { end(false); }
+      });
     }
 
     /** 完成後：嘗試關閉本分頁；無法關閉時提示切回原本的系統分頁 */
@@ -208,7 +238,12 @@
         }
         // [v4.14] 系統回傳登入領取碼：由本分頁帶著領取碼回到系統完成登入(原分頁無法取走憑證)
         if (data && /^[a-f0-9]{64}$/.test(String(data.claim || '')) && target.nonce) {
-          show(true, data.success ? '登入成功' : '登入未完成', data.success ? '正在進入系統...' : '正在返回系統查看說明...');
+          show(true, data.success ? '登入成功' : '登入未完成', data.success ? '正在回到原視窗...' : '正在返回系統查看說明...');
+          if (await handToOpener(target, data.claim)) { // [v4.20] 原視窗已完成登入：關閉本分頁
+            show(true, '登入成功', '已在原視窗完成登入，本分頁將自動關閉。');
+            finish(target, true);
+            return;
+          }
           location.replace(target.url + '?ln=' + target.nonce + '&lc=' + data.claim);
           return;
         }
