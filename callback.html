@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <title>Google 登入中</title>
   <!--
-    共用 Google 登入接收頁 v4.18（放在 GitHub Pages，上傳時檔名維持 callback.html）
+    共用 Google 登入接收頁 v4.19（放在 GitHub Pages，上傳時檔名維持 callback.html）
     [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
     [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
              (不自動跳回 script.google.com，避免手機多帳號失敗)
@@ -30,6 +30,8 @@
     v4.16：新增系統「expansion 經營發展室 展店評估」正式版(其餘系統設定不變)
     v4.17：新增系統「pos-analytics 欣食旅 POS營運資料分析」(其餘系統設定不變)
     v4.18：expansion、expansion-dev 改用網域版網址(/a/macros/gonna.online/s/)：瀏覽器登入多個 Google 帳號時，一般網址會被導到 /macros/u/1/ 而無法開啟(其餘系統設定不變)
+    v4.19：下列系統改用網域版網址(/a/macros/gonna.online/s/)，原因同 v4.18(部署 ID、顯示名稱與其餘邏輯不變)：
+           ccs、storelog、contract、incoming、drivegov、recruit、workforce、repair、repair-dev、recruit-dev、workforce-dev
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
   <style>
@@ -60,21 +62,21 @@
   </div>
   <script>
     /* =====================================================================
-     * ★ 系統白名單：系統代碼 → { name: 顯示名稱, url: Apps Script 網址(一般格式，結尾 /exec) }
+     * ★ 系統白名單：系統代碼 → { name: 顯示名稱, url: Apps Script 網址(網域版格式 /a/macros/gonna.online/s/…/exec) }
      *   系統代碼需與各系統設定相同(跨部門溝通系統：CFG.OAUTH_SYSTEM_ID；GoogleLogin 模組：GL_CFG.SYSTEM_ID)
      * ===================================================================== */
     const SYSTEMS = {
-      ccs: {
+      ccs: { // [v4.19]
         name: '跨部門溝通系統',
-        url: 'https://script.google.com/macros/s/AKfycbz9Kw7Zd29-WIC2-9a-ZLxyxInOz1ZhGg2603DKkOtpOa84S88UBAwSbV31Y7pD5TjX4g/exec'
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbz9Kw7Zd29-WIC2-9a-ZLxyxInOz1ZhGg2603DKkOtpOa84S88UBAwSbV31Y7pD5TjX4g/exec'
       },
-      storelog: {
+      storelog: { // [v4.19]
         name: '門市工作日誌',
-        url: 'https://script.google.com/macros/s/AKfycbzKFXb8KojVJLoXp9xoigGbvI17GMoeYNK691587MMqGB239kWkMfOApiegs9eBo8x7/exec'
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbzKFXb8KojVJLoXp9xoigGbvI17GMoeYNK691587MMqGB239kWkMfOApiegs9eBo8x7/exec'
       },
-      contract: { // [v4.3]
+      contract: { // [v4.3][v4.19]
         name: '欣食旅 合約管理系統',
-        url: 'https://script.google.com/macros/s/AKfycbyCeWx_-GMMY2g_3xYzcfzVtl5e07AY_ok87oUmsPg3OxqVlTI1TuJ9Xzm0Ccq0GTdp/exec'
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbyCeWx_-GMMY2g_3xYzcfzVtl5e07AY_ok87oUmsPg3OxqVlTI1TuJ9Xzm0Ccq0GTdp/exec'
       },
       pms: { // [v4.4]
         name: '專案追蹤管理系統',
@@ -84,37 +86,37 @@
         name: '門市加退保登記系統',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbyZ_0xVdg54FQi3zMxNugyqq2g2imlU74j5yi5oi957pCTcCzy0C9e2I91VVhFml7GG/exec'
       },
-      incoming: { // [v4.6]
+      incoming: { // [v4.6][v4.19]
         name: '公文來函紀錄系統',
-        url: 'https://script.google.com/macros/s/AKfycbwQwZ5F65dTK56APqMQSgfogGabf78yIfFbleavhujLeWrYmMhXaT8EiuFZcqvhfCSK/exec'
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwQwZ5F65dTK56APqMQSgfogGabf78yIfFbleavhujLeWrYmMhXaT8EiuFZcqvhfCSK/exec'
       },
-      drivegov: { // [v4.7]
+      drivegov: { // [v4.7][v4.19]
         name: 'Google Drive 權限治理中心',
-        url: 'https://script.google.com/macros/s/AKfycbzE7GOTeHKRogQEP_dJlFF7IqVtm2Jv17luwgg-SUJBiwlcyEvgJY_KneGDIJxy5exAQw/exec'
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbzE7GOTeHKRogQEP_dJlFF7IqVtm2Jv17luwgg-SUJBiwlcyEvgJY_KneGDIJxy5exAQw/exec'
       },
-      recruit: { // [v4.8]
+      recruit: { // [v4.8][v4.19]
         name: '104 招募分析儀表板',
-        url: 'https://script.google.com/macros/s/AKfycby0dbG7xCgfAMrOPBKuq66-yc6nAXFakB-aGw1OSYn04EKwiJoLwlwcfoPywyQJ60Cc/exec'
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycby0dbG7xCgfAMrOPBKuq66-yc6nAXFakB-aGw1OSYn04EKwiJoLwlwcfoPywyQJ60Cc/exec'
       },
-      workforce: { // [v4.9][v4.10]
+      workforce: { // [v4.9][v4.10][v4.19]
         name: '欣食旅 人力資源儀錶板',
-        url: 'https://script.google.com/macros/s/AKfycbxIAl1XtMF7eRWAdM-_907Y8UVUnHeRMx6eyGDaTU3UmgSXJ39BZF2deJ3JzRwdzs-Uqw/exec'
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxIAl1XtMF7eRWAdM-_907Y8UVUnHeRMx6eyGDaTU3UmgSXJ39BZF2deJ3JzRwdzs-Uqw/exec'
       },
-      repair: { // [v4.11]
+      repair: { // [v4.11][v4.19]
         name: '欣食旅 資產修繕報修系統',
-        url: 'https://script.google.com/macros/s/AKfycbwaYd7xE_XM-TUnH3ht18VA8geomiSF9lCBw1ke5oaTY0AuD3LJjbXKVMsJzDDF0j9-MQ/exec'
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwaYd7xE_XM-TUnH3ht18VA8geomiSF9lCBw1ke5oaTY0AuD3LJjbXKVMsJzDDF0j9-MQ/exec'
       },
-      'repair-dev': { // [v4.11] 預覽版
+      'repair-dev': { // [v4.11][v4.19] 預覽版
         name: '欣食旅 資產修繕報修系統（預覽版）',
-        url: 'https://script.google.com/macros/s/AKfycbwO9q0gd_wT-va318966RXRunQ2ZO_uVviFM1X7gu1GKU5pAebKOxGDmr0bPRqxoJzoEw/exec'
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwO9q0gd_wT-va318966RXRunQ2ZO_uVviFM1X7gu1GKU5pAebKOxGDmr0bPRqxoJzoEw/exec'
       },
-      'recruit-dev': { // [v4.12] 預覽版
+      'recruit-dev': { // [v4.12][v4.19] 預覽版
         name: '104 招募分析儀表板（預覽版）',
-        url: 'https://script.google.com/macros/s/AKfycbxY1I8Dx046hgqNfPwZ9VPKud8ldaj3Ea4pGxloAwAFkc6DbfgGd8wuOLnnXJ2AaGak/exec'
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxY1I8Dx046hgqNfPwZ9VPKud8ldaj3Ea4pGxloAwAFkc6DbfgGd8wuOLnnXJ2AaGak/exec'
       },
-      'workforce-dev': { // [v4.13] 預覽版
+      'workforce-dev': { // [v4.13][v4.19] 預覽版
         name: '欣食旅 人力資源儀錶板（預覽版）',
-        url: 'https://script.google.com/macros/s/AKfycbxSmXVMMZL620t3E0QDuBJHfHpDMk_KJ7IJBs5DDJzJW7x71DnqMgkWMirF3irOXjGF/exec'
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxSmXVMMZL620t3E0QDuBJHfHpDMk_KJ7IJBs5DDJzJW7x71DnqMgkWMirF3irOXjGF/exec'
       },
       'expansion-dev': { // [v4.15][v4.18] 預覽版
         name: '經營發展室 展店評估（預覽版）',
