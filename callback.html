@@ -7,7 +7,7 @@
   <meta name="referrer" content="no-referrer">
   <title>Google 登入中</title>
   <!--
-    共用 Google 登入接收頁 v4.15（放在 GitHub Pages，上傳時檔名維持 callback.html）
+    共用 Google 登入接收頁 v4.16（放在 GitHub Pages，上傳時檔名維持 callback.html）
     [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
     [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
              (不自動跳回 script.google.com，避免手機多帳號失敗)
@@ -27,6 +27,7 @@
     v4.14：支援「登入領取碼」：系統回傳 claim 時，本分頁直接帶著領取碼回到系統完成登入(登入結果只交給完成登入的瀏覽器)；
            系統未回傳 claim 時行為與 v4.13 相同(其餘系統不需更新)。
     v4.15：新增系統「expansion-dev 經營發展室 展店評估（預覽版）」(其餘系統設定不變)
+    v4.16：新增系統「expansion 經營發展室 展店評估」正式版(其餘系統設定不變)
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
   <style>
@@ -116,6 +117,10 @@
       'expansion-dev': { // [v4.15] 預覽版
         name: '經營發展室 展店評估（預覽版）',
         url: 'https://script.google.com/macros/s/AKfycbx4cXI6MTyStHLvJBaPPjZVdP22rUpoiqAlFxNnPHxpvEksDr2MMFV0xuB9e4i1__qW/exec'
+      },
+      expansion: { // [v4.16]
+        name: '經營發展室 展店評估',
+        url: 'https://script.google.com/macros/s/AKfycbxaULyGdyTKHuHRIjrN2aoEid98U4dP6mfZqDleFKd65IojgzKHHNn1O5ugXF1Nh-HV/exec'
       }
     };
     const DEFAULT_SYSTEM = 'ccs'; // 舊格式 state(沒有系統代碼)時使用
