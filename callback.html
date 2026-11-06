@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://script.google.com https://*.googleusercontent.com; base-uri 'none'; form-action 'none'">
   <title>Google 登入中</title>
   <!--
-    共用 Google 登入接收頁 v4.24（放在 GitHub Pages，上傳時檔名維持 callback.html）
+    共用 Google 登入接收頁 v4.25（放在 GitHub Pages，上傳時檔名維持 callback.html）
     [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
     [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
              (不自動跳回 script.google.com，避免手機多帳號失敗)
@@ -42,6 +42,8 @@
     v4.24：[R9] 加入內容安全政策(CSP)；[R5] 第一次送出連線失敗改用備援送出時，不再顯示成功，改請使用者回原分頁確認；
            [R6] price-volume、price-volume-dev 登記原視窗來源(origin)；新增系統「pos-analytics-dev 欣食旅 POS營運資料分析（預覽版）」。
            其他系統升級到登入模組 v1.4.0 後再登記 origin(舊版系統沒有接收程式，登記後會多等 10 秒才轉回)。
+    v4.25：[R6] 所有系統升級登入模組 v1.4.0 後，全部登記原視窗來源(origin)，嵌入 Google Sites 時也能把登入結果交回嵌入頁；
+           [R11] 跨部門溝通系統改用共用模組(state 一律為「系統代碼.登入請求」)，移除沒有系統代碼的舊格式相容(DEFAULT_SYSTEM)。
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
   <style>
@@ -73,66 +75,81 @@
   <script>
     /* =====================================================================
      * ★ 系統白名單：系統代碼 → { name: 顯示名稱, url: Apps Script 網址(網域版格式 /a/macros/gonna.online/s/…/exec) }
-     *   系統代碼需與各系統設定相同(跨部門溝通系統：CFG.OAUTH_SYSTEM_ID；GoogleLogin 模組：GL_CFG.SYSTEM_ID)
+     *   系統代碼需與各系統設定相同(GoogleLogin 模組：GL_CFG.SYSTEM_ID)；origin＝該系統 Apps Script 頁面來源(同一專案的正式與預覽相同)
      * ===================================================================== */
     const SYSTEMS = {
-      ccs: { // [v4.19]
+      ccs: { // [v4.19][v4.25 origin]
+        origin: 'https://n-zvjxx6bujix4ioxpupurysp6u3jm7k2qbo72jhq-0lu-script.googleusercontent.com',
         name: '跨部門溝通系統',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbz9Kw7Zd29-WIC2-9a-ZLxyxInOz1ZhGg2603DKkOtpOa84S88UBAwSbV31Y7pD5TjX4g/exec'
       },
-      storelog: { // [v4.19]
+      storelog: { // [v4.19][v4.25 origin]
+        origin: 'https://n-p7nph3efheu6gfcqnrqnthseloo4j65ficdy6ci-0lu-script.googleusercontent.com',
         name: '門市工作日誌',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbzKFXb8KojVJLoXp9xoigGbvI17GMoeYNK691587MMqGB239kWkMfOApiegs9eBo8x7/exec'
       },
-      contract: { // [v4.3][v4.19]
+      contract: { // [v4.3][v4.19][v4.25 origin]
+        origin: 'https://n-uizvnyo25lzcxhm6b5dbeei436o4j65ficdy6ci-0lu-script.googleusercontent.com',
         name: '欣食旅 合約管理系統',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbyCeWx_-GMMY2g_3xYzcfzVtl5e07AY_ok87oUmsPg3OxqVlTI1TuJ9Xzm0Ccq0GTdp/exec'
       },
-      pms: { // [v4.4]
+      pms: { // [v4.4][v4.25 origin]
+        origin: 'https://n-5c3vsjm7km4i2i2woaobeosvigo4j65ficdy6ci-0lu-script.googleusercontent.com',
         name: '專案追蹤管理系統',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwxppkcQGfB2pgWyYHInmwed6mpY7wrNX1oo_R96CjLNCiT2Dx1TdB5uiZYJ54-b3jt/exec'
       },
-      insure: { // [v4.5]
+      insure: { // [v4.5][v4.25 origin]
+        origin: 'https://n-j2sygnrnj6lxzce2iyt6ugl5doo4j65ficdy6ci-0lu-script.googleusercontent.com',
         name: '門市加退保登記系統',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbyZ_0xVdg54FQi3zMxNugyqq2g2imlU74j5yi5oi957pCTcCzy0C9e2I91VVhFml7GG/exec'
       },
-      incoming: { // [v4.6][v4.19]
+      incoming: { // [v4.6][v4.19][v4.25 origin]
+        origin: 'https://n-dq7na6tkqmye77lvtnnomznn5co4j65ficdy6ci-0lu-script.googleusercontent.com',
         name: '公文來函紀錄系統',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwQwZ5F65dTK56APqMQSgfogGabf78yIfFbleavhujLeWrYmMhXaT8EiuFZcqvhfCSK/exec'
       },
-      drivegov: { // [v4.7][v4.19]
+      drivegov: { // [v4.7][v4.19][v4.25 origin]
+        origin: 'https://n-e4eurydfbe2jgdsqkhite3gyppjm7k2qbo72jhq-0lu-script.googleusercontent.com',
         name: 'Google Drive 權限治理中心',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbzE7GOTeHKRogQEP_dJlFF7IqVtm2Jv17luwgg-SUJBiwlcyEvgJY_KneGDIJxy5exAQw/exec'
       },
-      recruit: { // [v4.8][v4.19]
+      recruit: { // [v4.8][v4.19][v4.25 origin]
+        origin: 'https://n-2bmemaolio5uzuo4red7o2wkkoo4j65ficdy6ci-0lu-script.googleusercontent.com',
         name: '104 招募分析儀表板',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycby0dbG7xCgfAMrOPBKuq66-yc6nAXFakB-aGw1OSYn04EKwiJoLwlwcfoPywyQJ60Cc/exec'
       },
-      workforce: { // [v4.9][v4.10][v4.19]
+      workforce: { // [v4.9][v4.10][v4.19][v4.25 origin]
+        origin: 'https://n-2fu6gpjurn4gj3x7hbymyrj64ljm7k2qbo72jhq-0lu-script.googleusercontent.com',
         name: '欣食旅 人力資源儀錶板',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxIAl1XtMF7eRWAdM-_907Y8UVUnHeRMx6eyGDaTU3UmgSXJ39BZF2deJ3JzRwdzs-Uqw/exec'
       },
-      repair: { // [v4.11][v4.19]
+      repair: { // [v4.11][v4.19][v4.25 origin]
+        origin: 'https://n-qyaxlv7umfhynjf3mozuefcsgdjm7k2qbo72jhq-0lu-script.googleusercontent.com',
         name: '欣食旅 資產修繕報修系統',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwaYd7xE_XM-TUnH3ht18VA8geomiSF9lCBw1ke5oaTY0AuD3LJjbXKVMsJzDDF0j9-MQ/exec'
       },
-      'repair-dev': { // [v4.11][v4.19] 預覽版
+      'repair-dev': { // [v4.11][v4.19] 預覽版[v4.25 origin]
+        origin: 'https://n-qyaxlv7umfhynjf3mozuefcsgdjm7k2qbo72jhq-0lu-script.googleusercontent.com',
         name: '欣食旅 資產修繕報修系統（預覽版）',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwO9q0gd_wT-va318966RXRunQ2ZO_uVviFM1X7gu1GKU5pAebKOxGDmr0bPRqxoJzoEw/exec'
       },
-      'recruit-dev': { // [v4.12][v4.19] 預覽版
+      'recruit-dev': { // [v4.12][v4.19] 預覽版[v4.25 origin]
+        origin: 'https://n-2bmemaolio5uzuo4red7o2wkkoo4j65ficdy6ci-0lu-script.googleusercontent.com',
         name: '104 招募分析儀表板（預覽版）',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxY1I8Dx046hgqNfPwZ9VPKud8ldaj3Ea4pGxloAwAFkc6DbfgGd8wuOLnnXJ2AaGak/exec'
       },
-      'workforce-dev': { // [v4.13][v4.19] 預覽版
+      'workforce-dev': { // [v4.13][v4.19] 預覽版[v4.25 origin]
+        origin: 'https://n-2fu6gpjurn4gj3x7hbymyrj64ljm7k2qbo72jhq-0lu-script.googleusercontent.com',
         name: '欣食旅 人力資源儀錶板（預覽版）',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxSmXVMMZL620t3E0QDuBJHfHpDMk_KJ7IJBs5DDJzJW7x71DnqMgkWMirF3irOXjGF/exec'
       },
-      'expansion-dev': { // [v4.15][v4.18] 預覽版
+      'expansion-dev': { // [v4.15][v4.18] 預覽版[v4.25 origin]
+        origin: 'https://n-gzopkwqql2durusszop4vnuqsgo4j65ficdy6ci-0lu-script.googleusercontent.com',
         name: '經營發展室 展店評估（預覽版）',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbx4cXI6MTyStHLvJBaPPjZVdP22rUpoiqAlFxNnPHxpvEksDr2MMFV0xuB9e4i1__qW/exec'
       },
-      expansion: { // [v4.16][v4.18]
+      expansion: { // [v4.16][v4.18][v4.25 origin]
+        origin: 'https://n-gzopkwqql2durusszop4vnuqsgo4j65ficdy6ci-0lu-script.googleusercontent.com',
         name: '經營發展室 展店評估',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxaULyGdyTKHuHRIjrN2aoEid98U4dP6mfZqDleFKd65IojgzKHHNn1O5ugXF1Nh-HV/exec'
       },
@@ -156,16 +173,17 @@
         name: '價量差分析表（預覽版）',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxkz4IDQ8nmYxvDcMAk73gsCn4Av70Ax7jKF-jMRWdB6Pdjx0ivQzmQps_kuJeAQdJY/exec'
       },
-      'restaurant-intel-dev': { // [v4.22] 預覽版
+      'restaurant-intel-dev': { // [v4.22] 預覽版[v4.25 origin]
+        origin: 'https://n-4qvll6qzak354uinxcwppqhkzco4j65ficdy6ci-0lu-script.googleusercontent.com',
         name: '欣食旅 餐飲情報（預覽版）',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbx2nhz1CV0HuoNwhDYNIPMN5ddDZtBXhX1KSed0h3OSXb3ScFwgVzlVapasKGakKOXD/exec'
       },
-      'restaurant-intel': { // [v4.23]
+      'restaurant-intel': { // [v4.23][v4.25 origin]
+        origin: 'https://n-4qvll6qzak354uinxcwppqhkzco4j65ficdy6ci-0lu-script.googleusercontent.com',
         name: '欣食旅 餐飲情報',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbzIb2ft13w6OrVtzlnKE6xJEi4veHnToulAcMrQI-GQgy9FnpMzq8mNCh3owPqrILuF/exec'
       }
     };
-    const DEFAULT_SYSTEM = 'ccs'; // 舊格式 state(沒有系統代碼)時使用
     const CLOSE_DELAY_MS = 800;
     const $ = id => document.getElementById(id);
 
@@ -179,7 +197,8 @@
     /** 解析 state：「系統代碼.登入請求」 */
     function parseState(state) {
       const parts = String(state || '').split('.');
-      const id = (parts.length > 1 ? parts[0] : DEFAULT_SYSTEM).toLowerCase();
+      if (parts.length !== 2) return null; // [v4.25] 一律為「系統代碼.登入請求」
+      const id = parts[0].toLowerCase();
       const nonce = parts[parts.length - 1];
       if (!/^[a-z0-9-]{2,20}$/.test(id) || !Object.prototype.hasOwnProperty.call(SYSTEMS, id)) return null;
       const sys = SYSTEMS[id];
