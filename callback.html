@@ -8,7 +8,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://script.google.com https://*.googleusercontent.com; base-uri 'none'; form-action 'none'">
   <title>Google 登入中</title>
   <!--
-    共用 Google 登入接收頁 v4.27（放在 GitHub Pages，上傳時檔名維持 callback.html）
+    共用 Google 登入接收頁 v4.28（放在 GitHub Pages，上傳時檔名維持 callback.html）
     [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
     [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
              (不自動跳回 script.google.com，避免手機多帳號失敗)
@@ -46,6 +46,7 @@
            [R11] 跨部門溝通系統改用共用模組(state 一律為「系統代碼.登入請求」)，移除沒有系統代碼的舊格式相容(DEFAULT_SYSTEM)。
     v4.26：新增系統「mgmt-report-dev 管理報表（預覽版）」(網域版網址、原視窗來源；其餘系統設定不變)
     v4.27：新增系統「mgmt-report 管理報表」正式版(網域版網址、原視窗來源與預覽版相同；其餘系統設定不變)
+    v4.28：mgmt-report、mgmt-report-dev 顯示名稱改為「欣食旅 財務管理報表」(網址與來源不變；其餘系統設定不變)
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
   <style>
@@ -187,12 +188,12 @@
       },
       'mgmt-report-dev': { // [v4.26] 財務 - 管理報表 預覽版
         origin: 'https://n-5ltcnja27kxbpebetw7de475uko4j65ficdy6ci-0lu-script.googleusercontent.com',
-        name: '管理報表（預覽版）',
+        name: '欣食旅 財務管理報表（預覽版）',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxDqLEHI1bDT3WDFCViy8f1b4JhBStX2xfpvtkE_lAoz6hanNNZMcN8hJT1F-64KtK2/exec'
       },
       'mgmt-report': { // [v4.27] 財務 - 管理報表 正式版
         origin: 'https://n-5ltcnja27kxbpebetw7de475uko4j65ficdy6ci-0lu-script.googleusercontent.com',
-        name: '管理報表',
+        name: '欣食旅 財務管理報表',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwnYGtZ303H1L4EZJOfUfFnjLlBBJSmbnPcfnvGOZsKyr9rkXLk801XE4yqqVXNJPLa/exec'
       }
     };
