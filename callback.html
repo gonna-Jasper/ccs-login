@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src https://script.google.com https://*.googleusercontent.com; base-uri 'none'; form-action 'none'">
   <title>Google 登入中</title>
   <!--
-    共用 Google 登入接收頁 v4.23（放在 GitHub Pages，上傳時檔名維持 callback.html）
+    共用 Google 登入接收頁 v4.24（放在 GitHub Pages，上傳時檔名維持 callback.html）
     [修正24] 多系統共用：state 格式「系統代碼.登入請求」，依 SYSTEMS 白名單轉交
     [修正27] 登入在新分頁進行：驗證完成後嘗試關閉本分頁(或提示切回原分頁)，由原系統分頁自動取回登入結果
              (不自動跳回 script.google.com，避免手機多帳號失敗)
@@ -38,6 +39,9 @@
     v4.21：新增系統「price-volume 價量差分析表」與「price-volume-dev 價量差分析表（預覽版）」(網域版網址；其餘系統設定不變)
     v4.22：新增系統「restaurant-intel-dev 欣食旅 餐飲情報（預覽版）」(網域版網址；其餘系統設定不變)
     v4.23：新增系統「restaurant-intel 欣食旅 餐飲情報」(網域版網址；其餘系統設定不變)
+    v4.24：[R9] 加入內容安全政策(CSP)；[R5] 第一次送出連線失敗改用備援送出時，不再顯示成功，改請使用者回原分頁確認；
+           [R6] price-volume、price-volume-dev 登記原視窗來源(origin)；新增系統「pos-analytics-dev 欣食旅 POS營運資料分析（預覽版）」。
+           其他系統升級到登入模組 v1.4.0 後再登記 origin(舊版系統沒有接收程式，登記後會多等 10 秒才轉回)。
     ★ 新增系統時只要在 SYSTEMS 加一行；本頁不含任何密碼或金鑰。
   -->
   <style>
@@ -137,11 +141,18 @@
         name: '欣食旅 POS營運資料分析',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxKTjJhk2-iDmRwjDXeBC_mhTPZJyGxGJU7uqqxRFkQ0c5MKnWpYDEMFJ9IthG_F5WJ/exec'
       },
-      'price-volume': { // [v4.21]
+      'pos-analytics-dev': { // [v4.24] 預覽版（登入 v1.4.0 試點）
+        origin: 'https://n-hlzb5pumcjtwzg2b4mhbzqt2qso4j65ficdy6ci-0lu-script.googleusercontent.com',
+        name: '欣食旅 POS營運資料分析（預覽版）',
+        url: 'https://script.google.com/a/macros/gonna.online/s/AKfycby5l4f-bm7V4_zhW-O1kLS6IIvWKkRQ2kg65hPet_hMdb0FjD8RF8fP9Cvj0VHHeAng/exec'
+      },
+      'price-volume': { // [v4.21][v4.24 origin]
+        origin: 'https://n-araqfvurojgno5cmpo2cpu6o6xjm7k2qbo72jhq-0lu-script.googleusercontent.com',
         name: '價量差分析表',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbwcdVqwmNxlATvKYFPIKL6WNk6hnYvs7caon4n1QqfADepmm7vjAibXLNswzFqjGXkGqA/exec'
       },
-      'price-volume-dev': { // [v4.21] 預覽版
+      'price-volume-dev': { // [v4.21][v4.24 origin] 預覽版
+        origin: 'https://n-araqfvurojgno5cmpo2cpu6o6xjm7k2qbo72jhq-0lu-script.googleusercontent.com',
         name: '價量差分析表（預覽版）',
         url: 'https://script.google.com/a/macros/gonna.online/s/AKfycbxkz4IDQ8nmYxvDcMAk73gsCn4Av70Ax7jKF-jMRWdB6Pdjx0ivQzmQps_kuJeAQdJY/exec'
       },
@@ -272,8 +283,9 @@
       } catch (e) {
         try {
           await fetch(target.url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body, credentials: 'omit' });
-          show(true, '已送出驗證', '正在返回系統...');
-          finish(target, true);
+          show(false, '已送出驗證', '連線不穩定，已改用備援方式送出。\n請切回原本的系統分頁確認是否已登入；若仍未登入，請重新按「使用 Google 帳號登入」。'); // [v4.24 R5]
+          $('icon').textContent = 'ℹ️';
+          finish(target, false);
         } catch (e2) {
           show(false, '連線失敗', '無法連線到系統，請檢查網路後回到系統重新登入。');
           $('note').style.display = 'block';
